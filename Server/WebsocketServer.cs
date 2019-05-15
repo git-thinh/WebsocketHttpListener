@@ -93,7 +93,9 @@ namespace Server
             }
             catch (Exception e)
             {
-                Console.WriteLine("Exception: {0}", e);
+                //Console.WriteLine("Exception: {0}", e);
+                Console.WriteLine("Exception: {0}", e.Message);
+                lock (_lock) _clients.Remove(webSocket);
             }
             finally
             {
