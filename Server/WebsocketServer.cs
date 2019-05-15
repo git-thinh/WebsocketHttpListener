@@ -65,14 +65,10 @@ namespace Server
             try
             {
 
-                byte[] receiveBuffer = new byte[1024];
+                byte[] receiveBuffer = new byte[1024 * 64];
                 while (webSocket.State == WebSocketState.Open)
                 {
                     WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
-
-                    string s = Encoding.UTF8.GetString(receiveBuffer).TrimEnd('\0');
-                    Console.WriteLine("-> SERVER: " + s);
-
                     if (receiveResult.MessageType == WebSocketMessageType.Close)
                     {
                         lock (_lock) _clients.Remove(webSocket);
@@ -80,14 +76,17 @@ namespace Server
                     }
                     else
                     {
+                        string message = Encoding.UTF8.GetString(receiveBuffer).TrimEnd('\0');
+                        //Console.WriteLine("-> SERVER: " + message);
+
                         byte[] bsend = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
                         var adata = new ArraySegment<byte>(bsend, 0, bsend.Length);
                         lock (_lock)
-                            foreach(var socket in _clients)
+                            foreach (var socket in _clients)
                                 socket.SendAsync(adata, WebSocketMessageType.Text, receiveResult.EndOfMessage, CancellationToken.None).Wait();
                         webSocket.SendAsync(adata, WebSocketMessageType.Text, receiveResult.EndOfMessage, CancellationToken.None).Wait();
 
-                        //await webSocket.SendAsync(adata, WebSocketMessageType.Binary, receiveResult.EndOfMessage, CancellationToken.None);
+                        await webSocket.SendAsync(adata, WebSocketMessageType.Binary, receiveResult.EndOfMessage, CancellationToken.None);
                     }
                 }
             }
